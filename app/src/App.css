@@ -1,0 +1,13 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+.App {
+  text-align: center;
+  background-color: #FCF6F5FF;
+  width: 100vw;
+  height: 100vh;
+}
+.navbar div:hover {
+  background-color: rgb(136, 2, 17);
+}
