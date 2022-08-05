@@ -2,9 +2,10 @@ import React, {Component} from 'react';
 
 
 class Bags extends Component{
-    constructor(){
+    constructor(props){
         super();
     }
+
     render(){
         return (
             <div></div>    

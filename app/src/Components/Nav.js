@@ -7,7 +7,8 @@ const st = {
     width: '200px',
     height: '100vh',
     backgroundColor: '#990011FF',  
-    boxShadow: '2px 0 8px #990011FF'
+    boxShadow: '2px 0 8px #990011FF',
+    float: 'left'
 };
 
 const imgSt = {

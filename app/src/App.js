@@ -14,9 +14,6 @@ function App() {
           <Route exact path='/' exact element={
             <Info></Info>
           }></Route>
-          <Route exact path='/bags' exact element={
-            <Bags></Bags>
-          }></Route>  
         </Routes>
       </div>
     </Router>
