@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const request = require('request');
 const mysql      = require('mysql');
+
 const connection = mysql.createConnection({
     host     : 'localhost',
     database : 'thy',
@@ -86,4 +87,89 @@ app.get('/getuser', (req, res) => {
         res.send('Invalid Parameters');
     }
     
-})
+});
+
+app.get('/getupdates', (req, res) => {
+    //debug
+    //console.log(req);
+
+    if(req.query['baggageToken']){
+        //TO DO : REGEX FOR SECURITY
+
+        var sql = 'SELECT * FROM thy.baggageUpdates \
+        JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
+        JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
+        WHERE baggageTable.baggageToken=\'' + req.query['baggageToken'] + '\'';
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            var ret = []
+
+            results.forEach(result => {
+                console.log(result);
+                
+                ret.push(result);
+            });
+            
+            res.send(ret);
+        });
+    }else if(req.query['userID']){
+        //TO DO : REGEX FOR SECURITY
+
+        var sql = 'SELECT * FROM thy.baggageUpdates \
+        JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
+        JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
+        JOIN thy.userTable ON baggageTable.userID = thy.userTable.userID\
+        WHERE thy.userTable.userID=' + req.query['userID'] ;
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            var ret = []
+
+            results.forEach(result => {
+                console.log(result);
+                
+                ret.push(result);
+            });
+            
+            res.send(ret);
+        });
+    }else if(req.query['pnrID']){
+        //TO DO : REGEX FOR SECURITY
+
+        var sql = 'SELECT * FROM thy.baggageUpdates \
+        JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
+        JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
+        JOIN thy.userTable ON baggageTable.userID = thy.userTable.userID\
+        WHERE thy.userTable.pnrID=\'' + req.query['pnrID'] + '\'' ;
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            var ret = {};
+
+            results.forEach(result => {
+                if(ret[result['baggageID']] == undefined){
+                    ret[result['baggageID']] = {
+                        baggageName: result['baggageName'],
+                        scannerList: []
+                    };
+                }
+
+                ret[result['baggageID']]['scannerList'].push({
+                    scannerName: result['scannerName'],
+                    updateTime: result['updateTime']
+                });
+
+            });
+
+            console.log(ret);
+            res.send(JSON.stringify(ret));
+        });
+    }else{
+        res.send('Invalid Parameters');
+    }
+    
+});
