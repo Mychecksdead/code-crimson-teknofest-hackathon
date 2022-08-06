@@ -13,12 +13,18 @@ function Profile(props){
     }, []);
 
 
-    const logOut = () => {
-        window.location.reload();
-    }
 
     return (
-        <div>
+        <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '250px',
+            fontSize: '30px',
+            fontFamily: 'monospace',
+            border: 'solid 5px black',
+            padding: '50px 50px',
+            textAlign: 'left'
+        }}>
            <div>Name: {name}</div>
            <div>Surname: {lastName}</div>
         </div>    
