@@ -151,12 +151,11 @@ app.post('/getupdates', (req, res) => {
         thy.baggageTable.ownerSurname=\'' + ownerSurname + '\'';
 
         var ret = {result: true, baggages: {}};
-
+        var found = false;
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
 
-            var found = false;
             results.forEach(result => {
                 found = true;
                 if(ret['baggages'][result['baggageID']] == undefined){
@@ -175,6 +174,8 @@ app.post('/getupdates', (req, res) => {
             }
         });
 
+        if(!found) return;
+        
         var sql = 'SELECT * FROM thy.baggageUpdates \
         JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
         JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
@@ -255,7 +256,7 @@ app.post('/adminlogin', function(req, res) {
     const pass = req.body.adminPass;
     
     if(!name || !pass){
-        res.send({result: false});
+        res.send({result: false, message: "Invalid Parameters"});
         return;
     }
     var sql = 'SELECT * FROM thy.adminTable \
@@ -265,10 +266,93 @@ app.post('/adminlogin', function(req, res) {
             throw error;
         
         if(results.length < 1){
-            res.send({result: false});
+            res.send({result: false, message: "Invalid Admin Account"});
             return;
         }
 
        res.send({result: true});
+    });
+});
+
+app.post('/registerScanner', function(req, res) {
+    const name = req.body.adminName;
+    const pass = req.body.adminPass;
+
+    const scannerName = req.body.scannerName;
+    
+    if(!name || !pass || !scannerName){
+        res.send({result: false, message: "Invalid Parameters"});
+        return;
+    }
+
+    var sql = 'SELECT * FROM thy.adminTable \
+    WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
+    connection.query(sql, function (error, results, fields) {
+        if (error)
+            throw error;
+        
+        if(results.length < 1){
+            res.send({result: false, message: "Invalid Admin Account"});
+            return;
+        }
+
+        const token = generateToken(32);
+        var sql = 'INSERT INTO thy.scannerTable \
+        (scannerName, scannerToken) \
+        VALUES (\'' + scannerName + '\' ,\
+        \'' + token + '\')';
+
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            res.send({result: true, message: "Scanner Entry Successfully Created", token: token});
+        }); 
+    });
+});
+
+app.post('/deleteBaggage', function(req, res) {
+    //TO DO : COUNT DELETED ROWS
+    const name = req.body.adminName;
+    const pass = req.body.adminPass;
+
+    const baggageToken = req.body.baggageToken;
+    
+    if(!name || !pass || !baggageToken){
+        res.send({result: false, message: "Invalid Parameters"});
+        return;
+    }
+    
+    var sql = 'SELECT * FROM thy.adminTable \
+    WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
+    connection.query(sql, function (error, results, fields) {
+        if (error)
+            throw error;
+        
+        if(results.length < 1){
+            res.send({result: false, message: "Invalid Admin Account"});
+            return;
+        }
+
+        
+        var sql = 'DELETE FROM thy.baggageTable \
+        WHERE thy.baggageTable.baggageToken = \
+        \'' + baggageToken + '\')';
+
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+        }); 
+
+        var sql = 'DELETE FROM thy.baggageUpdates \
+        WHERE thy.baggageUpdates.baggageToken = \
+        \'' + baggageToken + '\')';
+
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+        }); 
+
+        res.send({result: true, message: "Baggage Entries Successfully Deleted!"});
     });
 });
