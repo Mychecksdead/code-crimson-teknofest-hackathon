@@ -18,6 +18,16 @@ const corsOptions ={
 
 const app = express();
 
+//TO DO: GENERATE UNIQUE TOKENS
+function generateToken(n) {
+    var chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    var token = '';
+    for(var i = 0; i < n; i++) {
+        token += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return token;
+}
+
 app.use(express.json());
 app.use(cors(corsOptions));
 
@@ -104,45 +114,35 @@ app.get('/getupdates', (req, res) => {
             if (error)
                 throw error;
             
-            var ret = []
+            var ret = {};
 
             results.forEach(result => {
-                console.log(result);
-                
-                ret.push(result);
+                if(ret[result['baggageID']] == undefined){
+                    ret[result['baggageID']] = {
+                        baggageName: result['baggageName'],
+                        scannerList: []
+                    };
+                }
+
+                ret[result['baggageID']]['scannerList'].push({
+                    scannerName: result['scannerName'],
+                    updateTime: result['updateTime']
+                });
+    
             });
             
-            res.send(ret);
-        });
-    }else if(req.query['userID']){
-        //TO DO : REGEX FOR SECURITY
-
-        var sql = 'SELECT * FROM thy.baggageUpdates \
-        JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
-        JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
-        JOIN thy.userTable ON baggageTable.userID = thy.userTable.userID\
-        WHERE thy.userTable.userID=' + req.query['userID'] ;
-        connection.query(sql, function (error, results, fields) {
-            if (error)
-                throw error;
-            
-            var ret = []
-
-            results.forEach(result => {
-                console.log(result);
-                
-                ret.push(result);
-            });
-            
-            res.send(ret);
+            console.log(ret);
+            res.send(JSON.stringify(ret));
         });
     }else if(req.query['pnrID']){
         //TO DO : REGEX FOR SECURITY
+        //TO DO : NAME CHECK
 
         var sql = 'SELECT * FROM thy.baggageUpdates \
         JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
         JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
         JOIN thy.userTable ON baggageTable.userID = thy.userTable.userID\
+        JOIN thy.adminTable ON baggageTable.registrarAdminID = thy.adminTable.adminID\
         WHERE thy.userTable.pnrID=\'' + req.query['pnrID'] + '\'' ;
         connection.query(sql, function (error, results, fields) {
             if (error)
@@ -154,6 +154,7 @@ app.get('/getupdates', (req, res) => {
                 if(ret[result['baggageID']] == undefined){
                     ret[result['baggageID']] = {
                         baggageName: result['baggageName'],
+                        registrarAdmin: result['adminName'],
                         scannerList: []
                     };
                 }
@@ -172,4 +173,33 @@ app.get('/getupdates', (req, res) => {
         res.send('Invalid Parameters');
     }
     
+});
+
+app.post('/gettoken', function(req, res) {
+    const name = req.body.adminName;
+    const pass = req.body.adminPass;
+    
+    var sql = 'SELECT * FROM thy.adminTable \
+    WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
+    connection.query(sql, function (error, results, fields) {
+        if (error)
+            throw error;
+        
+        if(results.length < 1){
+            res.send({token: NULL});
+            return;
+        }
+
+        var token = generateToken(32);
+        var sql = 'UPDATE thy.adminTable \
+        SET thy.adminTable.adminToken = \''+ token + '\' \
+        WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            console.log('new token : ' + token);
+            res.send({token: token});
+        });
+    });
 });

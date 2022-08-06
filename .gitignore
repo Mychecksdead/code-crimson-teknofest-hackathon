@@ -33,4 +33,5 @@
 
 /node_modules
 /server/node_modules
-/test/node_modules
+/test/testget/node_modules
+/test/testpost/node_modules
