@@ -17,7 +17,7 @@ request.post(
 );
 */
 
-
+/*
 request.post(
     'http://localhost:3001/getupdates',
     { json: { pnrID: 'HA1', ownerName: 'Een', ownerSurname: 'g' } },
@@ -27,7 +27,7 @@ request.post(
         }
     }
 );
-
+*/
 /*
 request.post(
     'http://localhost:3001/registerScanner',
@@ -42,7 +42,7 @@ request.post(
     }
 );
 */
-/*
+
 request.post(
     'http://localhost:3001/deleteBaggage',
     { json: { 
@@ -54,4 +54,4 @@ request.post(
             console.log(body);
         }
     }
-);*/
+);

@@ -337,7 +337,7 @@ app.post('/deleteBaggage', function(req, res) {
         
         var sql = 'DELETE FROM thy.baggageTable \
         WHERE thy.baggageTable.baggageToken = \
-        \'' + baggageToken + '\')';
+        \'' + baggageToken + '\'';
 
         connection.query(sql, function (error, results, fields) {
             if (error)
@@ -346,7 +346,7 @@ app.post('/deleteBaggage', function(req, res) {
 
         var sql = 'DELETE FROM thy.baggageUpdates \
         WHERE thy.baggageUpdates.baggageToken = \
-        \'' + baggageToken + '\')';
+        \'' + baggageToken + '\'';
 
         connection.query(sql, function (error, results, fields) {
             if (error)
