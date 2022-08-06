@@ -167,36 +167,36 @@ app.post('/getupdates', (req, res) => {
                 }
             });
 
-
             if(!found){
                 res.send({result: false, message: "Couldn't Find Any Baggages"});
+                
                 return;
             }
-        });
 
-        if(!found) return;
-        
-        var sql = 'SELECT * FROM thy.baggageUpdates \
-        JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
-        JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
-        JOIN thy.adminTable ON baggageTable.registrarAdminID = thy.adminTable.adminID\
-        WHERE thy.baggageTable.ownerPNR=\'' + pnr + '\'  AND \
-        thy.baggageTable.ownerName=\'' + ownerName + '\'  AND \
-        thy.baggageTable.ownerSurname=\'' + ownerSurname + '\'';
-        connection.query(sql, function (error, results, fields) {
-            if (error)
-                throw error;
-            
-            results.forEach(result => {
+            var sql = 'SELECT * FROM thy.baggageUpdates \
+            JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
+            JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
+            JOIN thy.adminTable ON baggageTable.registrarAdminID = thy.adminTable.adminID\
+            WHERE thy.baggageTable.ownerPNR=\'' + pnr + '\'  AND \
+            thy.baggageTable.ownerName=\'' + ownerName + '\'  AND \
+            thy.baggageTable.ownerSurname=\'' + ownerSurname + '\'';
+            connection.query(sql, function (error, results, fields) {
+                if (error)
+                    throw error;
+                
+                results.forEach(result => {
 
-                ret['baggages'][result['baggageID']]['scannerList'].push({
-                    scannerName: result['scannerName'],
-                    updateTime: result['updateTime']
+                    ret['baggages'][result['baggageID']]['scannerList'].push({
+                        scannerName: result['scannerName'],
+                        updateTime: result['updateTime']
+                    });
+
                 });
-
+                res.send(ret);
             });
-            res.send(ret);
+
         });
+
     }else{
         res.send({result: false, message: "Invalid Parameters"});
     }
