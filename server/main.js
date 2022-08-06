@@ -73,7 +73,7 @@ connection.connect(function(err) {
     console.log('Connected as id ' + connection.threadId);
 });
 
-
+/*
 app.get('/getuser', (req, res) => {
     //req.query['smth']
 
@@ -98,11 +98,16 @@ app.get('/getuser', (req, res) => {
     }
     
 });
+*/
 
-app.get('/getupdates', (req, res) => {
+app.post('/getupdates', (req, res) => {
     //debug
     //console.log(req);
+    const pnr = req.body.pnrID;
+    const ownerName = req.body.ownerName;
+    const ownerSurname = req.body.ownerSurname;
 
+    /*
     if(req.query['baggageToken']){
         //TO DO : REGEX FOR SECURITY
 
@@ -134,51 +139,125 @@ app.get('/getupdates', (req, res) => {
             console.log(ret);
             res.send(JSON.stringify(ret));
         });
-    }else if(req.query['pnrID']){
+    }else 
+    */
+    if(pnr && ownerName && ownerSurname){
         //TO DO : REGEX FOR SECURITY
         //TO DO : NAME CHECK
+        var sql = 'SELECT * FROM thy.baggageTable \
+        JOIN thy.adminTable ON thy.adminTable.adminID = thy.baggageTable.registrarAdminID\
+        WHERE thy.baggageTable.ownerPNR=\'' + pnr + '\'  AND \
+        thy.baggageTable.ownerName=\'' + ownerName + '\'  AND \
+        thy.baggageTable.ownerSurname=\'' + ownerSurname + '\'';
+
+        var ret = {result: true, baggages: {}};
+
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+
+            var found = false;
+            results.forEach(result => {
+                found = true;
+                if(ret['baggages'][result['baggageID']] == undefined){
+                    ret['baggages'][result['baggageID']] = {
+                        baggageName: result['baggageName'],
+                        registrarAdmin: result['adminNickname'],
+                        scannerList: []
+                    };
+                }
+            });
+
+
+            if(!found){
+                res.send({result: false, message: "Couldn't Find Any Baggages"});
+                return;
+            }
+        });
 
         var sql = 'SELECT * FROM thy.baggageUpdates \
         JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
         JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
-        JOIN thy.userTable ON baggageTable.userID = thy.userTable.userID\
         JOIN thy.adminTable ON baggageTable.registrarAdminID = thy.adminTable.adminID\
-        WHERE thy.userTable.pnrID=\'' + req.query['pnrID'] + '\'' ;
+        WHERE thy.baggageTable.ownerPNR=\'' + pnr + '\'  AND \
+        thy.baggageTable.ownerName=\'' + ownerName + '\'  AND \
+        thy.baggageTable.ownerSurname=\'' + ownerSurname + '\'';
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
             
-            var ret = {};
-
             results.forEach(result => {
-                if(ret[result['baggageID']] == undefined){
-                    ret[result['baggageID']] = {
-                        baggageName: result['baggageName'],
-                        registrarAdmin: result['adminName'],
-                        scannerList: []
-                    };
-                }
 
-                ret[result['baggageID']]['scannerList'].push({
+                ret['baggages'][result['baggageID']]['scannerList'].push({
                     scannerName: result['scannerName'],
                     updateTime: result['updateTime']
                 });
 
             });
-
-            console.log(ret);
-            res.send(JSON.stringify(ret));
+            res.send(ret);
         });
     }else{
-        res.send('Invalid Parameters');
+        res.send({result: false, message: "Invalid Parameters"});
     }
     
 });
 
-app.post('/gettoken', function(req, res) {
+app.post('/registerBaggage', (req, res) => {
+    //debug
+    //console.log(req);
+    const adminName = req.body.adminName;
+    const adminPass = req.body.adminPass;
+
+    const baggageName = req.body.baggageName;
+    const pnr = req.body.pnrID;
+    const ownerName = req.body.ownerName;
+    const ownerSurname = req.body.ownerSurname;
+
+    if(adminName && adminPass && baggageName && pnr && ownerName && ownerSurname){
+        //TO DO : REGEX FOR SECURITY
+        //TO DO : NAME CHECK
+        var sql = 'SELECT * FROM thy.adminTable \
+        WHERE thy.adminTable.adminName=\'' + adminName + '\' AND thy.adminTable.adminPass=\'' + adminPass + '\'';
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            if(results.length < 1){
+                res.send({result: false, message: "Invalid Admin Account"});
+                return;
+            }
+
+            const token = generateToken(32);
+            var sql = 'INSERT INTO thy.baggageTable \
+            (registrarAdminId, baggageName, baggageToken, ownerPNR, ownerName, ownerSurname) \
+            VALUES (\'' + results[0]['adminID'] + '\' ,\
+            \'' + baggageName + '\' ,\
+            \'' + token + '\' ,\
+            \'' + pnr + '\' ,\
+            \'' + ownerName + '\' ,\
+            \'' + ownerSurname + '\')';
+
+            connection.query(sql, function (error, results, fields) {
+                if (error)
+                    throw error;
+                
+                res.send({result: true, message: "Baggage Entry Successfully Created", token: token});
+            }); 
+        });
+    }else{
+        res.send({result: false, message: "Invalid Parameters"});
+    }
+    
+});
+
+app.post('/adminlogin', function(req, res) {
     const name = req.body.adminName;
     const pass = req.body.adminPass;
     
+    if(!name || !pass){
+        res.send({result: false});
+        return;
+    }
     var sql = 'SELECT * FROM thy.adminTable \
     WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
     connection.query(sql, function (error, results, fields) {
@@ -186,20 +265,10 @@ app.post('/gettoken', function(req, res) {
             throw error;
         
         if(results.length < 1){
-            res.send({token: NULL});
+            res.send({result: false});
             return;
         }
 
-        var token = generateToken(32);
-        var sql = 'UPDATE thy.adminTable \
-        SET thy.adminTable.adminToken = \''+ token + '\' \
-        WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
-        connection.query(sql, function (error, results, fields) {
-            if (error)
-                throw error;
-            
-            console.log('new token : ' + token);
-            res.send({token: token});
-        });
+       res.send({result: true});
     });
 });
