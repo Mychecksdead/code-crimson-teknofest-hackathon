@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const request = require('request');
 const mysql      = require('mysql');
+const crypto = require('crypto'); 
 
 const connection = mysql.createConnection({
     host     : 'localhost',
@@ -111,7 +112,7 @@ app.post('/adminlogin', function(req, res) {
         return;
     }
     var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=' + name + ' AND thy.adminTable.adminPass=' + pass + '';
+    WHERE thy.adminTable.adminName=' + name;
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -121,7 +122,54 @@ app.post('/adminlogin', function(req, res) {
             return;
         }
 
-       res.send({result: true});
+        var hash = crypto.pbkdf2Sync(pass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
+        
+        if(results[0]['adminPass'] == hash){
+            res.send({result: true});
+        }else{
+            res.send({result: false, message: "Invalid Admin Account"});
+        }
+       
+    });
+});
+
+app.post('/registerAdmin', function(req, res) {
+    const name = connection.escape(req.body.adminName);
+    const pass = connection.escape(req.body.adminPass);
+    const nickname = connection.escape(req.body.adminNickname);
+    
+    if(!name || !pass || !nickname){
+        res.send({result: false, message: "Invalid Parameters"});
+        return;
+    }
+
+    var sql = 'SELECT * FROM thy.adminTable \
+    WHERE thy.adminTable.adminName=' + name + ' OR thy.adminTable.adminNickname=' + nickname + '';
+    connection.query(sql, function (error, results, fields) {
+        if (error)
+            throw error;
+        
+        if(results.length > 0){
+            res.send({result: false, message: "Admin Credientals Already In Use"});
+            return;
+        }
+
+        const salt = crypto.randomBytes(16).toString('hex'); 
+        const hash = crypto.pbkdf2Sync(pass, salt,  1000, 64, `sha512`).toString(`hex`); 
+
+
+        var sql = 'INSERT INTO thy.adminTable \
+            (adminNickname ,adminName, adminPass, adminPassSalt) \
+            VALUES (' + nickname + ' ,\
+            ' + name + ' ,\
+            \'' + hash + '\' ,\
+            \'' + salt + '\')';
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            res.send({result: true, message: 'User Created Successfully'});
+        });
     });
 });
 
@@ -287,7 +335,7 @@ app.post('/registerScanner', function(req, res) {
     }
 
     var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=' + name + ' AND thy.adminTable.adminPass=' + pass + '';
+    WHERE thy.adminTable.adminName=' + name;
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -297,18 +345,25 @@ app.post('/registerScanner', function(req, res) {
             return;
         }
 
-        const token = generateToken(32);
-        var sql = 'INSERT INTO thy.scannerTable \
-        (scannerName, scannerToken) \
-        VALUES (' + scannerName + ' ,\
-        \'' + token + '\')';
+        var hash = crypto.pbkdf2Sync(pass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
+        
+        if(results[0]['adminPass'] == hash){
+            const token = generateToken(32);
+            var sql = 'INSERT INTO thy.scannerTable \
+            (scannerName, scannerToken) \
+            VALUES (' + scannerName + ' ,\
+            \'' + token + '\')';
 
-        connection.query(sql, function (error, results, fields) {
-            if (error)
-                throw error;
-            
-            res.send({result: true, message: "Scanner Entry Successfully Created", token: token});
-        }); 
+            connection.query(sql, function (error, results, fields) {
+                if (error)
+                    throw error;
+                
+                res.send({result: true, message: "Scanner Entry Successfully Created", token: token});
+            }); 
+        }else{
+            res.send({result: false, message: "Invalid Admin Account"});
+        }
+       
     });
 });
 
@@ -317,7 +372,7 @@ app.post('/registerScanner', function(req, res) {
 app.post('/registerBaggage', (req, res) => {
     //debug
     //console.log(req);
-    const adminName = connection.escape(req.body.adminName);
+    const name = connection.escape(req.body.adminName);
     const adminPass = connection.escape(req.body.adminPass);
 
     const baggageName = connection.escape(req.body.baggageName);
@@ -325,9 +380,9 @@ app.post('/registerBaggage', (req, res) => {
     const ownerName = connection.escape(req.body.ownerName);
     const ownerSurname = connection.escape(req.body.ownerSurname);
 
-    if(adminName && adminPass && baggageName && pnr && ownerName && ownerSurname){
+    if(name && adminPass && baggageName && pnr && ownerName && ownerSurname){
         var sql = 'SELECT * FROM thy.adminTable \
-        WHERE thy.adminTable.adminName=' + adminName + ' AND thy.adminTable.adminPass=' + adminPass + '';
+        WHERE thy.adminTable.adminName=' + name;
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
@@ -337,22 +392,30 @@ app.post('/registerBaggage', (req, res) => {
                 return;
             }
 
-            const token = generateToken(32);
-            var sql = 'INSERT INTO thy.baggageTable \
-            (registrarAdminId, baggageName, baggageToken, ownerPNR, ownerName, ownerSurname) \
-            VALUES (' + results[0]['adminID'] + ' ,\
-            ' + baggageName + ' ,\
-            \'' + token + '\' ,\
-            ' + pnr + ' ,\
-            ' + ownerName + ' ,\
-            ' + ownerSurname + ')';
+            var hash = crypto.pbkdf2Sync(pass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
+            
+            if(results[0]['adminPass'] == hash){
+                const token = generateToken(32);
+                var sql = 'INSERT INTO thy.baggageTable \
+                (registrarAdminId, baggageName, baggageToken, ownerPNR, ownerName, ownerSurname) \
+                VALUES (' + results[0]['adminID'] + ' ,\
+                ' + baggageName + ' ,\
+                \'' + token + '\' ,\
+                ' + pnr + ' ,\
+                ' + ownerName + ' ,\
+                ' + ownerSurname + ')';
 
-            connection.query(sql, function (error, results, fields) {
-                if (error)
-                    throw error;
-                
-                res.send({result: true, message: "Baggage Entry Successfully Created", token: token});
-            }); 
+                connection.query(sql, function (error, results, fields) {
+                    if (error)
+                        throw error;
+                    
+                    res.send({result: true, message: "Baggage Entry Successfully Created", token: token});
+                }); 
+
+            }else{
+                res.send({result: false, message: "Invalid Admin Account"});
+            }
+        
         });
     }else{
         res.send({result: false, message: "Invalid Parameters"});
@@ -373,7 +436,7 @@ app.post('/deleteBaggage', function(req, res) {
     }
     
     var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=' + name + ' AND thy.adminTable.adminPass=' + pass + '';
+    WHERE thy.adminTable.adminName=' + name;
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -383,26 +446,32 @@ app.post('/deleteBaggage', function(req, res) {
             return;
         }
 
+        var hash = crypto.pbkdf2Sync(pass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
         
-        var sql = 'DELETE FROM thy.baggageTable \
-        WHERE thy.baggageTable.baggageToken = \
-        ' + baggageToken + '';
+        if(results[0]['adminPass'] == hash){
+            var sql = 'DELETE FROM thy.baggageTable \
+            WHERE thy.baggageTable.baggageToken = \
+            ' + baggageToken + '';
 
-        connection.query(sql, function (error, results, fields) {
-            if (error)
-                throw error;
-        }); 
+            connection.query(sql, function (error, results, fields) {
+                if (error)
+                    throw error;
+            }); 
 
-        var sql = 'DELETE FROM thy.baggageUpdates \
-        WHERE thy.baggageUpdates.baggageToken = \
-        ' + baggageToken + '';
+            var sql = 'DELETE FROM thy.baggageUpdates \
+            WHERE thy.baggageUpdates.baggageToken = \
+            ' + baggageToken + '';
 
-        connection.query(sql, function (error, results, fields) {
-            if (error)
-                throw error;
-        }); 
+            connection.query(sql, function (error, results, fields) {
+                if (error)
+                    throw error;
+            }); 
 
-        res.send({result: true, message: "Baggage Entries Successfully Deleted!"});
+            res.send({result: true, message: "Baggage Entries Successfully Deleted!"});
+        }else{
+            res.send({result: false, message: "Invalid Admin Account"});
+        }
+       
     });
 
 });
