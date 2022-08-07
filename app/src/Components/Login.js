@@ -12,7 +12,8 @@ class Login extends Component{
           {
             username: this.state.name,
             lastname: this.state.lastName, 
-            PNR: this.state.userPNR
+            PNR: this.state.userPNR,
+            title: this.state.usertitle
           }).then(response => {
             data = response;
             console.log(data);
@@ -29,9 +30,12 @@ class Login extends Component{
         this.state = {
             userPNR: '',
             name: '',
-            lastName: ''
+            lastName: '',
+            usertitle: ''
         };
     }
+
+
     render(){
         return (
             <div class="main" style={{
@@ -57,6 +61,7 @@ class Login extends Component{
                   <input class="form__input" type="text" placeholder="Ad" onChange={e => this.setState({name: e.target.value})}/>
                   <input class="form__input" type="text" placeholder="Soyad" onChange={e => this.setState({lastName: e.target.value})}/>
                   <input class="form__input" type="password" placeholder="PNR" onChange={e => this.setState({userPNR: e.target.value})}/>
+                  <input class="form__input" type="password" placeholder="Cinsiyet (E veya K)" onChange={e => this.setState({usertitle: e.target.value})}/>
                   <button class="form__button button" onClick={this.tryLogin}>GİRİŞ YAP</button>
                 </section>
               </div>
