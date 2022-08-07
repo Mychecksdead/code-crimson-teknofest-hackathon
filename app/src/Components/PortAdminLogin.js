@@ -8,7 +8,21 @@ class PortAdminLogin extends Component{
   constructor(){
     super();
     this.tryLogin = () => {
-      // port admin try login
+      //added later
+      Axios.post('http://localhost:3001/adminlogin', 
+      {
+        adminName: this.state.username,
+        adminPass: this.state.password, 
+      }).then(response => {
+        data = response;
+        if(data.data.result == true){
+          sessionStorage.setItem('currentportadminloggedin', 'yes');
+          sessionStorage.setItem('username', this.state.username);
+          sessionStorage.setItem('password', this.state.password);
+          console.log('Logged in');
+          window.location.reload();
+        }
+      });
     }
     this.state = {
       username: '',

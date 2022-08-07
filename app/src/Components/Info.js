@@ -1,6 +1,5 @@
 import React, {Component} from 'react';
-import Profile from './Profile';
-import Bags from './Bags';
+import Bags from './Bags';  
 import Login from './Login';
 import Axios from 'axios';
 
@@ -26,8 +25,6 @@ class Info extends Component{
                     userPNR: sessionStorage.getItem('pnr')
                 });
             }
-            console.log(sessionStorage.getItem('currentloggedin'));
-            console.log(this.state.isloggedin);
         }
     }
 
@@ -40,8 +37,7 @@ class Info extends Component{
             <div>
                 {this.state.isloggedin ? 
                     <div>
-                        <Profile name={this.state.name} lastName={this.state.lastName}></Profile>
-                        <Bags name={this.state.name} lastName={this.state.lastName}></Bags>
+                        <Bags name={this.state.name} lastName={this.state.lastName} pnr={this.state.userPNR}></Bags>
                     </div>
                     :
                     <Login></Login>

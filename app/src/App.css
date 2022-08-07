@@ -79,6 +79,7 @@ body {
   padding: 25px;
   background-color: #ecf0f3;
   transition: 1.25s;
+  overflow-y: scroll;
 }
 
 .form {

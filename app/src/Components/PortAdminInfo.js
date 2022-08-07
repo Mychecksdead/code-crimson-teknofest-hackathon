@@ -1,8 +1,8 @@
 import React, {Component} from 'react';
-import Profile from './Profile';
 import Bags from './Bags';
 import PortAdminLogin from './PortAdminLogin';
 import Axios from 'axios';
+import AddBaggage from './AddBaggage';
 
 let data;
 
@@ -12,21 +12,17 @@ class Info extends Component{
 
         this.state = {
             username: '',
-            password: '',
             isloggedin: false
         };
 
         this.isloggedIn = () => {
             if(sessionStorage.getItem('currentportadminloggedin') == 'yes'){
                 this.setState({
-                    name: sessionStorage.getItem('username'),
+                    name: sessionStorage.getItem('username'),   
                     isloggedin: true,
-                    lastName: sessionStorage.getItem('password'),
-                    userPNR: sessionStorage.getItem('pnr')
                 });
             }
             console.log(sessionStorage.getItem('currentportadminloggedin'));
-            console.log(this.state.isloggedin);
         }
     }
 
@@ -38,8 +34,8 @@ class Info extends Component{
         return(
             <div>
                 {this.state.isloggedin ? 
-                    <div>
-                    </div>
+                    <AddBaggage>
+                    </AddBaggage>
                     :
                     <PortAdminLogin></PortAdminLogin>
                 }
