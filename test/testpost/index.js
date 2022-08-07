@@ -17,24 +17,24 @@ request.post(
 );
 */
 
-/*
+
 request.post(
     'http://localhost:3001/getupdates',
-    { json: { pnrID: 'HA1', ownerName: 'Een', ownerSurname: 'g' } },
+    { json: { pnrID: 'HA1', ownerName: 'Eren', ownerSurname: 'g' } },
     function (error, response, body) {
         if (!error && response.statusCode == 200) {
             console.log(body);
         }
     }
 );
-*/
+
 /*
 request.post(
     'http://localhost:3001/registerScanner',
     { json: { 
     adminName: 'admin1', 
     adminPass: 'adminPass',
-    scannerName: 'Istanbul Airport 2'} },
+    scannerName: 'Istanbul Airport 1'} },
     function (error, response, body) {
         if (!error && response.statusCode == 200) {
             console.log(body);
@@ -42,7 +42,7 @@ request.post(
     }
 );
 */
-
+/*
 request.post(
     'http://localhost:3001/deleteBaggage',
     { json: { 
@@ -55,3 +55,18 @@ request.post(
         }
     }
 );
+*/
+
+/*
+request.post(
+    'http://localhost:3001/scanBaggage',
+    { json: { 
+    scannerToken: 'zIxNGmQua4HfmzjuOwR5ykzhWdEGvJmt', 
+    baggageToken: 'YEnlNdscEDQ6WErlyQfoklBPEGUIq850'} },
+    function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            console.log(body);
+        }
+    }
+);
+*/

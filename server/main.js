@@ -100,21 +100,47 @@ app.get('/getuser', (req, res) => {
 });
 */
 
+//------------------------- PORT ADMIN -----------------------------
+
+app.post('/adminlogin', function(req, res) {
+    const name = connection.escape(req.body.adminName);
+    const pass = connection.escape(req.body.adminPass);
+    
+    if(!name || !pass){
+        res.send({result: false, message: "Invalid Parameters"});
+        return;
+    }
+    var sql = 'SELECT * FROM thy.adminTable \
+    WHERE thy.adminTable.adminName=' + name + ' AND thy.adminTable.adminPass=' + pass + '';
+    connection.query(sql, function (error, results, fields) {
+        if (error)
+            throw error;
+        
+        if(results.length < 1){
+            res.send({result: false, message: "Invalid Admin Account"});
+            return;
+        }
+
+       res.send({result: true});
+    });
+});
+
+//------------------------- CLIENT -----------------------------
+
 app.post('/getupdates', (req, res) => {
     //debug
     //console.log(req);
-    const pnr = req.body.pnrID;
-    const ownerName = req.body.ownerName;
-    const ownerSurname = req.body.ownerSurname;
+    const pnr = connection.escape(req.body.pnrID);
+    const ownerName = connection.escape(req.body.ownerName);
+    const ownerSurname = connection.escape(req.body.ownerSurname);
 
     /*
     if(req.query['baggageToken']){
-        //TO DO : REGEX FOR SECURITY
 
         var sql = 'SELECT * FROM thy.baggageUpdates \
         JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
         JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
-        WHERE baggageTable.baggageToken=\'' + req.query['baggageToken'] + '\'';
+        WHERE baggageTable.baggageToken=' + req.query['baggageToken'] + '';
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
@@ -142,13 +168,11 @@ app.post('/getupdates', (req, res) => {
     }else 
     */
     if(pnr && ownerName && ownerSurname){
-        //TO DO : REGEX FOR SECURITY
-        //TO DO : NAME CHECK
         var sql = 'SELECT * FROM thy.baggageTable \
         JOIN thy.adminTable ON thy.adminTable.adminID = thy.baggageTable.registrarAdminID\
-        WHERE thy.baggageTable.ownerPNR=\'' + pnr + '\'  AND \
-        thy.baggageTable.ownerName=\'' + ownerName + '\'  AND \
-        thy.baggageTable.ownerSurname=\'' + ownerSurname + '\'';
+        WHERE thy.baggageTable.ownerPNR=' + pnr + '  AND \
+        thy.baggageTable.ownerName=' + ownerName + '  AND \
+        thy.baggageTable.ownerSurname=' + ownerSurname + '';
 
         var ret = {result: true, baggages: {}};
         var found = false;
@@ -177,9 +201,9 @@ app.post('/getupdates', (req, res) => {
             JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
             JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
             JOIN thy.adminTable ON baggageTable.registrarAdminID = thy.adminTable.adminID\
-            WHERE thy.baggageTable.ownerPNR=\'' + pnr + '\'  AND \
-            thy.baggageTable.ownerName=\'' + ownerName + '\'  AND \
-            thy.baggageTable.ownerSurname=\'' + ownerSurname + '\'';
+            WHERE thy.baggageTable.ownerPNR=' + pnr + '  AND \
+            thy.baggageTable.ownerName=' + ownerName + '  AND \
+            thy.baggageTable.ownerSurname=' + ownerSurname + '';
             connection.query(sql, function (error, results, fields) {
                 if (error)
                     throw error;
@@ -203,22 +227,107 @@ app.post('/getupdates', (req, res) => {
     
 });
 
+//------------------------- SCANNERS -----------------------------
+
+app.post('/scanBaggage', function(req, res) {
+    const baggageToken = connection.escape(req.body.baggageToken);
+    const scannerToken = connection.escape(req.body.scannerToken);
+    
+    if(!baggageToken || !scannerToken){
+        res.send({result: false, message: "Invalid Parameters"});
+        return;
+    }
+
+    var sql = 'SELECT * FROM thy.scannerTable \
+    WHERE thy.scannerTable.scannerToken=' + scannerToken + '';
+    connection.query(sql, function (error, results, fields) {
+        if (error)
+            throw error;
+        
+        if(results.length < 1){
+            res.send({result: false, message: "Invalid Scanner Token"});
+            return;
+        }
+        var scannerID = results[0]['scannerID'];
+        var sql = 'SELECT * FROM thy.baggageTable \
+        WHERE thy.baggageTable.baggageToken=' + baggageToken + '';
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            if(results.length < 1){
+                res.send({result: false, message: "Invalid Baggage Token"});
+                return;
+            }
+    
+            var sql = 'INSERT INTO thy.baggageUpdates \
+            (scannerID, baggageToken) \
+            VALUES (' + scannerID + ' ,\
+            ' + baggageToken + ')';
+    
+            connection.query(sql, function (error, results, fields) {
+                if (error)
+                    throw error;
+                
+                res.send({result: true, message: "Scanner Entry Successfully Created"});
+            }); 
+        });
+    });
+});
+
+app.post('/registerScanner', function(req, res) {
+    const name = connection.escape(req.body.adminName);
+    const pass = connection.escape(req.body.adminPass);
+
+    const scannerName = connection.escape(req.body.scannerName);
+    
+    if(!name || !pass || !scannerName){
+        res.send({result: false, message: "Invalid Parameters"});
+        return;
+    }
+
+    var sql = 'SELECT * FROM thy.adminTable \
+    WHERE thy.adminTable.adminName=' + name + ' AND thy.adminTable.adminPass=' + pass + '';
+    connection.query(sql, function (error, results, fields) {
+        if (error)
+            throw error;
+        
+        if(results.length < 1){
+            res.send({result: false, message: "Invalid Admin Account"});
+            return;
+        }
+
+        const token = generateToken(32);
+        var sql = 'INSERT INTO thy.scannerTable \
+        (scannerName, scannerToken) \
+        VALUES (' + scannerName + ' ,\
+        \'' + token + '\')';
+
+        connection.query(sql, function (error, results, fields) {
+            if (error)
+                throw error;
+            
+            res.send({result: true, message: "Scanner Entry Successfully Created", token: token});
+        }); 
+    });
+});
+
+//------------------------- BAGGAGES -----------------------------
+
 app.post('/registerBaggage', (req, res) => {
     //debug
     //console.log(req);
-    const adminName = req.body.adminName;
-    const adminPass = req.body.adminPass;
+    const adminName = connection.escape(req.body.adminName);
+    const adminPass = connection.escape(req.body.adminPass);
 
-    const baggageName = req.body.baggageName;
-    const pnr = req.body.pnrID;
-    const ownerName = req.body.ownerName;
-    const ownerSurname = req.body.ownerSurname;
+    const baggageName = connection.escape(req.body.baggageName);
+    const pnr = connection.escape(req.body.pnrID);
+    const ownerName = connection.escape(req.body.ownerName);
+    const ownerSurname = connection.escape(req.body.ownerSurname);
 
     if(adminName && adminPass && baggageName && pnr && ownerName && ownerSurname){
-        //TO DO : REGEX FOR SECURITY
-        //TO DO : NAME CHECK
         var sql = 'SELECT * FROM thy.adminTable \
-        WHERE thy.adminTable.adminName=\'' + adminName + '\' AND thy.adminTable.adminPass=\'' + adminPass + '\'';
+        WHERE thy.adminTable.adminName=' + adminName + ' AND thy.adminTable.adminPass=' + adminPass + '';
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
@@ -231,12 +340,12 @@ app.post('/registerBaggage', (req, res) => {
             const token = generateToken(32);
             var sql = 'INSERT INTO thy.baggageTable \
             (registrarAdminId, baggageName, baggageToken, ownerPNR, ownerName, ownerSurname) \
-            VALUES (\'' + results[0]['adminID'] + '\' ,\
-            \'' + baggageName + '\' ,\
+            VALUES (' + results[0]['adminID'] + ' ,\
+            ' + baggageName + ' ,\
             \'' + token + '\' ,\
-            \'' + pnr + '\' ,\
-            \'' + ownerName + '\' ,\
-            \'' + ownerSurname + '\')';
+            ' + pnr + ' ,\
+            ' + ownerName + ' ,\
+            ' + ownerSurname + ')';
 
             connection.query(sql, function (error, results, fields) {
                 if (error)
@@ -251,72 +360,12 @@ app.post('/registerBaggage', (req, res) => {
     
 });
 
-app.post('/adminlogin', function(req, res) {
-    const name = req.body.adminName;
-    const pass = req.body.adminPass;
-    
-    if(!name || !pass){
-        res.send({result: false, message: "Invalid Parameters"});
-        return;
-    }
-    var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
-    connection.query(sql, function (error, results, fields) {
-        if (error)
-            throw error;
-        
-        if(results.length < 1){
-            res.send({result: false, message: "Invalid Admin Account"});
-            return;
-        }
-
-       res.send({result: true});
-    });
-});
-
-app.post('/registerScanner', function(req, res) {
-    const name = req.body.adminName;
-    const pass = req.body.adminPass;
-
-    const scannerName = req.body.scannerName;
-    
-    if(!name || !pass || !scannerName){
-        res.send({result: false, message: "Invalid Parameters"});
-        return;
-    }
-
-    var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
-    connection.query(sql, function (error, results, fields) {
-        if (error)
-            throw error;
-        
-        if(results.length < 1){
-            res.send({result: false, message: "Invalid Admin Account"});
-            return;
-        }
-
-        const token = generateToken(32);
-        var sql = 'INSERT INTO thy.scannerTable \
-        (scannerName, scannerToken) \
-        VALUES (\'' + scannerName + '\' ,\
-        \'' + token + '\')';
-
-        connection.query(sql, function (error, results, fields) {
-            if (error)
-                throw error;
-            
-            res.send({result: true, message: "Scanner Entry Successfully Created", token: token});
-        }); 
-    });
-});
-
 app.post('/deleteBaggage', function(req, res) {
     //TO DO : COUNT DELETED ROWS
-    const name = req.body.adminName;
-    const pass = req.body.adminPass;
+    const name = connection.escape(req.body.adminName);
+    const pass = connection.escape(req.body.adminPass);
 
-    const baggageToken = req.body.baggageToken;
+    const baggageToken = connection.escape(req.body.baggageToken);
     
     if(!name || !pass || !baggageToken){
         res.send({result: false, message: "Invalid Parameters"});
@@ -324,7 +373,7 @@ app.post('/deleteBaggage', function(req, res) {
     }
     
     var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=\'' + name + '\' AND thy.adminTable.adminPass=\'' + pass + '\'';
+    WHERE thy.adminTable.adminName=' + name + ' AND thy.adminTable.adminPass=' + pass + '';
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -337,7 +386,7 @@ app.post('/deleteBaggage', function(req, res) {
         
         var sql = 'DELETE FROM thy.baggageTable \
         WHERE thy.baggageTable.baggageToken = \
-        \'' + baggageToken + '\'';
+        ' + baggageToken + '';
 
         connection.query(sql, function (error, results, fields) {
             if (error)
@@ -346,7 +395,7 @@ app.post('/deleteBaggage', function(req, res) {
 
         var sql = 'DELETE FROM thy.baggageUpdates \
         WHERE thy.baggageUpdates.baggageToken = \
-        \'' + baggageToken + '\'';
+        ' + baggageToken + '';
 
         connection.query(sql, function (error, results, fields) {
             if (error)
@@ -355,4 +404,5 @@ app.post('/deleteBaggage', function(req, res) {
 
         res.send({result: true, message: "Baggage Entries Successfully Deleted!"});
     });
+
 });
