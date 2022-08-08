@@ -111,8 +111,8 @@ app.post('/adminlogin', function(req, res) {
         res.send({result: false, message: "Invalid Parameters"});
         return;
     }
-    var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=' + name;
+    var sql = 'SELECT * FROM adminTable \
+    WHERE adminTable.adminName=' + name;
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -143,8 +143,8 @@ app.post('/registerAdmin', function(req, res) {
         return;
     }
 
-    var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=' + name + ' OR thy.adminTable.adminNickname=' + nickname + '';
+    var sql = 'SELECT * FROM adminTable \
+    WHERE adminTable.adminName=' + name + ' OR adminTable.adminNickname=' + nickname + '';
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -158,7 +158,7 @@ app.post('/registerAdmin', function(req, res) {
         const hash = crypto.pbkdf2Sync(pass, salt,  1000, 64, `sha512`).toString(`hex`); 
 
 
-        var sql = 'INSERT INTO thy.adminTable \
+        var sql = 'INSERT INTO adminTable \
             (adminNickname ,adminName, adminPass, adminPassSalt) \
             VALUES (' + nickname + ' ,\
             ' + name + ' ,\
@@ -185,9 +185,9 @@ app.post('/getupdates', (req, res) => {
     /*
     if(req.query['baggageToken']){
 
-        var sql = 'SELECT * FROM thy.baggageUpdates \
-        JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
-        JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
+        var sql = 'SELECT * FROM baggageUpdates \
+        JOIN scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
+        JOIN baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
         WHERE baggageTable.baggageToken=' + req.query['baggageToken'] + '';
         connection.query(sql, function (error, results, fields) {
             if (error)
@@ -216,11 +216,11 @@ app.post('/getupdates', (req, res) => {
     }else 
     */
     if(pnr && ownerName && ownerSurname){
-        var sql = 'SELECT * FROM thy.baggageTable \
-        JOIN thy.adminTable ON thy.adminTable.adminID = thy.baggageTable.registrarAdminID\
-        WHERE thy.baggageTable.ownerPNR=' + pnr + '  AND \
-        thy.baggageTable.ownerName=' + ownerName + '  AND \
-        thy.baggageTable.ownerSurname=' + ownerSurname + '';
+        var sql = 'SELECT * FROM baggageTable \
+        JOIN adminTable ON adminTable.adminID = baggageTable.registrarAdminID\
+        WHERE baggageTable.ownerPNR=' + pnr + '  AND \
+        baggageTable.ownerName=' + ownerName + '  AND \
+        baggageTable.ownerSurname=' + ownerSurname + '';
 
         var ret = {result: true, baggages: {}};
         var found = false;
@@ -245,13 +245,13 @@ app.post('/getupdates', (req, res) => {
                 return;
             }
 
-            var sql = 'SELECT * FROM thy.baggageUpdates \
-            JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
-            JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
-            JOIN thy.adminTable ON baggageTable.registrarAdminID = thy.adminTable.adminID\
-            WHERE thy.baggageTable.ownerPNR=' + pnr + '  AND \
-            thy.baggageTable.ownerName=' + ownerName + '  AND \
-            thy.baggageTable.ownerSurname=' + ownerSurname + '';
+            var sql = 'SELECT * FROM baggageUpdates \
+            JOIN scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
+            JOIN baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
+            JOIN adminTable ON baggageTable.registrarAdminID = adminTable.adminID\
+            WHERE baggageTable.ownerPNR=' + pnr + '  AND \
+            baggageTable.ownerName=' + ownerName + '  AND \
+            baggageTable.ownerSurname=' + ownerSurname + '';
             connection.query(sql, function (error, results, fields) {
                 if (error)
                     throw error;
@@ -286,8 +286,8 @@ app.post('/scanBaggage', function(req, res) {
         return;
     }
 
-    var sql = 'SELECT * FROM thy.scannerTable \
-    WHERE thy.scannerTable.scannerToken=' + scannerToken + '';
+    var sql = 'SELECT * FROM scannerTable \
+    WHERE scannerTable.scannerToken=' + scannerToken + '';
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -297,8 +297,8 @@ app.post('/scanBaggage', function(req, res) {
             return;
         }
         var scannerID = results[0]['scannerID'];
-        var sql = 'SELECT * FROM thy.baggageTable \
-        WHERE thy.baggageTable.baggageToken=' + baggageToken + '';
+        var sql = 'SELECT * FROM baggageTable \
+        WHERE baggageTable.baggageToken=' + baggageToken + '';
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
@@ -308,7 +308,7 @@ app.post('/scanBaggage', function(req, res) {
                 return;
             }
     
-            var sql = 'INSERT INTO thy.baggageUpdates \
+            var sql = 'INSERT INTO baggageUpdates \
             (scannerID, baggageToken) \
             VALUES (\'' + scannerID + '\' ,\
             ' + baggageToken + ')';
@@ -334,8 +334,8 @@ app.post('/registerScanner', function(req, res) {
         return;
     }
 
-    var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=' + name;
+    var sql = 'SELECT * FROM adminTable \
+    WHERE adminTable.adminName=' + name;
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -349,7 +349,7 @@ app.post('/registerScanner', function(req, res) {
         
         if(results[0]['adminPass'] == hash){
             const token = generateToken(32);
-            var sql = 'INSERT INTO thy.scannerTable \
+            var sql = 'INSERT INTO scannerTable \
             (scannerName, scannerToken) \
             VALUES (' + scannerName + ' ,\
             \'' + token + '\')';
@@ -381,8 +381,8 @@ app.post('/registerBaggage', (req, res) => {
     const ownerSurname = connection.escape(req.body.ownerSurname);
 
     if(name && adminPass && baggageName && pnr && ownerName && ownerSurname){
-        var sql = 'SELECT * FROM thy.adminTable \
-        WHERE thy.adminTable.adminName=' + name;
+        var sql = 'SELECT * FROM adminTable \
+        WHERE adminTable.adminName=' + name;
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
@@ -396,7 +396,7 @@ app.post('/registerBaggage', (req, res) => {
             
             if(results[0]['adminPass'] == hash){
                 const token = generateToken(32);
-                var sql = 'INSERT INTO thy.baggageTable \
+                var sql = 'INSERT INTO baggageTable \
                 (registrarAdminId, baggageName, baggageToken, ownerPNR, ownerName, ownerSurname) \
                 VALUES (\'' + results[0]['adminID'] + '\' ,\
                 ' + baggageName + ' ,\
@@ -435,8 +435,8 @@ app.post('/deleteBaggage', function(req, res) {
         return;
     }
     
-    var sql = 'SELECT * FROM thy.adminTable \
-    WHERE thy.adminTable.adminName=' + name;
+    var sql = 'SELECT * FROM adminTable \
+    WHERE adminTable.adminName=' + name;
     connection.query(sql, function (error, results, fields) {
         if (error)
             throw error;
@@ -449,8 +449,8 @@ app.post('/deleteBaggage', function(req, res) {
         var hash = crypto.pbkdf2Sync(pass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
         
         if(results[0]['adminPass'] == hash){
-            var sql = 'DELETE FROM thy.baggageTable \
-            WHERE thy.baggageTable.baggageToken = \
+            var sql = 'DELETE FROM baggageTable \
+            WHERE baggageTable.baggageToken = \
             ' + baggageToken + '';
 
             connection.query(sql, function (error, results, fields) {
@@ -458,8 +458,8 @@ app.post('/deleteBaggage', function(req, res) {
                     throw error;
             }); 
 
-            var sql = 'DELETE FROM thy.baggageUpdates \
-            WHERE thy.baggageUpdates.baggageToken = \
+            var sql = 'DELETE FROM baggageUpdates \
+            WHERE baggageUpdates.baggageToken = \
             ' + baggageToken + '';
 
             connection.query(sql, function (error, results, fields) {
