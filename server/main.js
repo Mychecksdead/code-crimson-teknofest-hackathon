@@ -7,8 +7,8 @@ const crypto = require('crypto');
 const connection = mysql.createConnection({
     host     : 'localhost',
     database : 'thy',
-    user     : 'root',
-    password : '1234',
+    user     : 'thyAdmin',
+    password : 'thyAdmin',
 });
 
 const corsOptions ={
@@ -217,6 +217,7 @@ app.post('/getupdates', (req, res) => {
     */
     if(pnr && ownerName && ownerSurname){
         var sql = 'SELECT * FROM thy.baggageTable \
+        JOIN thy.adminTable ON thy.adminTable.adminID = thy.baggageTable.registrarAdminID\
         WHERE thy.baggageTable.ownerPNR=' + pnr + '  AND \
         thy.baggageTable.ownerName=' + ownerName + '  AND \
         thy.baggageTable.ownerSurname=' + ownerSurname + '';
@@ -226,7 +227,7 @@ app.post('/getupdates', (req, res) => {
         connection.query(sql, function (error, results, fields) {
             if (error)
                 throw error;
-            console.log(results);
+
             results.forEach(result => {
                 found = true;
                 if(ret['baggages'][result['baggageID']] == undefined){
@@ -247,6 +248,7 @@ app.post('/getupdates', (req, res) => {
             var sql = 'SELECT * FROM thy.baggageUpdates \
             JOIN thy.scannerTable ON baggageUpdates.scannerID = scannerTable.scannerID \
             JOIN thy.baggageTable ON baggageUpdates.baggageToken = baggageTable.baggageToken\
+            JOIN thy.adminTable ON baggageTable.registrarAdminID = thy.adminTable.adminID\
             WHERE thy.baggageTable.ownerPNR=' + pnr + '  AND \
             thy.baggageTable.ownerName=' + ownerName + '  AND \
             thy.baggageTable.ownerSurname=' + ownerSurname + '';
@@ -308,7 +310,7 @@ app.post('/scanBaggage', function(req, res) {
     
             var sql = 'INSERT INTO thy.baggageUpdates \
             (scannerID, baggageToken) \
-            VALUES (' + scannerID + ' ,\
+            VALUES (\'' + scannerID + '\' ,\
             ' + baggageToken + ')';
     
             connection.query(sql, function (error, results, fields) {
@@ -390,13 +392,13 @@ app.post('/registerBaggage', (req, res) => {
                 return;
             }
 
-            var hash = crypto.pbkdf2Sync(adminPass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
+            var hash = crypto.pbkdf2Sync(pass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
             
             if(results[0]['adminPass'] == hash){
                 const token = generateToken(32);
                 var sql = 'INSERT INTO thy.baggageTable \
                 (registrarAdminId, baggageName, baggageToken, ownerPNR, ownerName, ownerSurname) \
-                VALUES (' + results[0]['adminID'] + ' ,\
+                VALUES (\'' + results[0]['adminID'] + '\' ,\
                 ' + baggageName + ' ,\
                 \'' + token + '\' ,\
                 ' + pnr + ' ,\
