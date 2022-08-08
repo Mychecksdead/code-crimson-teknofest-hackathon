@@ -392,7 +392,7 @@ app.post('/registerBaggage', (req, res) => {
                 return;
             }
 
-            var hash = crypto.pbkdf2Sync(pass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
+            var hash = crypto.pbkdf2Sync(adminPass,  results[0]['adminPassSalt'], 1000, 64, `sha512`).toString(`hex`);
             
             if(results[0]['adminPass'] == hash){
                 const token = generateToken(32);
